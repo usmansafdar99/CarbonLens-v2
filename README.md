@@ -15,7 +15,6 @@ Every calculation is saved to the user's own history.
 **Windows:** double-click **`run.bat`**.
 **macOS / Linux:** run `./run.sh`.
 
-The first run creates a virtual environment and installs the requirements (about a
 minute). After that the dashboard opens at **http://localhost:8000**. Close the window
 (or press Ctrl+C) to stop.
 
