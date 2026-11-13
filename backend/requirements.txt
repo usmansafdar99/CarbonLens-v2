@@ -1,0 +1,13 @@
+# CarbonLens backend — Python 3.10+ (tested on 3.12 and 3.13)
+Flask==3.0.3
+flask-cors==5.0.0
+SQLAlchemy==2.0.36
+python-dotenv==1.0.1
+PyJWT==2.10.1
+bcrypt==4.2.1
+requests==2.32.3
+reportlab==4.2.5
+python-docx==1.1.2
+waitress==3.0.2             # production server that also works on Windows
+gunicorn==23.0.0; platform_system != "Windows"   # production server on Linux hosts
+psycopg2-binary==2.9.10     # PostgreSQL driver (Neon / Supabase / Render Postgres)

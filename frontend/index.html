@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>CarbonLens · Cotton carbon footprint by SAWiE</title>
+<meta name="description" content="Farm-gate carbon footprint calculator for cotton, built by SAWiE."/>
+<meta name="theme-color" content="#0b3d24"/>
+<link rel="icon" type="image/png" href="/static/img/sawie-logo.png"/>
+<link rel="preload" href="/static/fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="/static/fonts/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="/static/img/sawie-logo.png" as="image"/>
+<link rel="stylesheet" href="/static/css/theme.css?v=20"/>
+<script src="/static/vendor/chart.umd.min.js" defer></script>
+<script src="/static/vendor/motion.js"></script>
+<script src="/static/js/theme.js?v=6"></script>
+</head>
+<body class="page-home">
+
+<!-- ═════════════════════════ NAVIGATION ═════════════════════════ -->
+<header class="cx-nav" id="cxNav">
+  <div class="wrap">
+    <a class="cx-brand" onclick="goHome()">
+      <img src="/static/img/sawie-logo.png" alt="SAWiE"/>
+      <span class="div"></span>
+      <span class="prod">Carbon<b>Lens</b><small>Cotton carbon footprint</small></span>
+    </a>
+    <nav class="cx-links" id="cxLinks">
+      <button class="cx-link nav-home" onclick="goHome()">Home</button>
+      <button class="cx-link nav-calc" onclick="startCalc()">Calculation</button>
+      <button class="cx-link nav-contact" onclick="openContact()">Contact</button>
+      <button class="cx-link nav-about" onclick="goAbout()">About</button>
+    </nav>
+    <div class="cx-auth">
+            <button class="cx-pill only-guest" onclick="openAuth('register')">Sign up</button>
+      <div class="hdr-welcome only-auth"><span class="hdr-user">User</span></div>
+      <div class="hdr-avatar only-auth" onclick="toggleMenu(event)" title="Account"><span>CL</span>
+        <div class="hdr-menu">
+          <div class="hdr-menu-head"><b id="hdrMenuName">&mdash;</b><small id="hdrMenuMail"></small></div>
+          <div class="hdr-menu-item" onclick="openProfile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</div>
+          <div class="hdr-menu-item" onclick="openProfile();prfSwitch('hist')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>History</div>
+          <div class="hdr-menu-item" onclick="startCalc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>New calculation</div>
+          <div class="hdr-menu-item danger" onclick="doSignout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Sign out</div>
+        </div>
+      </div>
+    </div>
+    <button class="cx-burger" onclick="event.stopPropagation();document.getElementById('cxLinks').classList.toggle('open')" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</header>
+<div class="err-bar"><span>&#9888;</span><span class="err-msg"></span><span class="sp"></span>
+  <button onclick="refreshApp()">Refresh</button><button onclick="dismissError()">&times;</button></div>
+
+<!-- ═════════════════════════ FORGOT PASSWORD ═════════════════════════ -->
+<div id="forgotOverlay" onclick="if(event.target===this)closeForgot()">
+  <div class="forgot-card">
+    <button class="forgot-close" onclick="closeForgot()" aria-label="Close">&#10005;</button>
+    <div class="forgot-title">Reset password</div>
+    <div id="frStep1">
+      <div class="forgot-sub">Enter your username or email. We will send a 6-digit code to the email on the account.</div>
+      <div id="frError1" class="note err"></div>
+      <div class="fl" id="forgotUsernameWrap"><input id="forgotUsername" type="text" placeholder=" " autocomplete="username"/><label for="forgotUsername">Username or email</label></div>
+      <button class="swap-submit" id="frBtn1" onclick="frSendOtp()">Send code</button>
+    </div>
+    <div id="frStep2" style="display:none;">
+      <div class="forgot-sub" id="frOtpSub">Check your inbox and enter the code.</div>
+      <div id="frError2" class="note err"></div>
+      <div class="fl" id="forgotOtpWrap"><input id="forgotOtp" type="text" inputmode="numeric" maxlength="6" placeholder=" " style="letter-spacing:.4em;font-weight:700"/><label for="forgotOtp">6-digit code</label></div>
+      <button class="swap-submit" id="frBtn2" onclick="frVerifyOtp()">Verify code</button>
+      <p style="text-align:center;font-size:13.5px;margin-top:.9rem;"><button class="btn-link" onclick="frGoBack(1)">&larr; Back</button></p>
+    </div>
+    <div id="frStep3" style="display:none;">
+      <div class="forgot-sub">Choose a new password for your account.</div>
+      <div id="frError3" class="note err"></div>
+      <div class="fl" id="forgotNewPwWrap"><input id="forgotNewPw" type="password" placeholder=" " autocomplete="new-password"/><label for="forgotNewPw">New password</label></div>
+      <div class="fl" id="forgotConfPwWrap"><input id="forgotConfPw" type="password" placeholder=" " autocomplete="new-password"/><label for="forgotConfPw">Confirm password</label></div>
+      <button class="swap-submit" id="frBtn3" onclick="frResetPassword()">Update password</button>
+    </div>
+    <div id="frStep4" style="display:none;" class="forgot-done">
+      <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></div>
+      <div class="forgot-title">Password updated</div>
+      <div class="forgot-sub">You can sign in with the new password now.</div>
+      <button class="swap-submit" onclick="closeForgot()">Back to sign in</button>
+    </div>
+    <p style="text-align:center;font-size:13.5px;color:var(--muted);margin-top:1rem;" id="frBackToLogin">Remembered it? <button class="btn-link" onclick="closeForgot()">Sign in</button></p>
+  </div>
+</div>
+
+<!-- ═════════════════════════ SIGN IN / SIGN UP ═════════════════════════ -->
+<div class="screen" id="scLogin">
+  <div class="auth-split">
+    <aside class="auth-art">
+      <a class="cx-brand" onclick="goHome()">
+        <span class="logo-tile"><img src="/static/img/sawie-logo.png" alt="SAWiE"/></span><span class="div"></span>
+        <span class="prod">Carbon<b>Lens</b><small>Cotton carbon footprint</small></span>
+      </a>
+      <div class="auth-art-body">
+        <span class="auth-eyebrow">Farm-gate carbon accounting</span>
+        <h2>Carbon footprints for cotton farms, built on recognised methods.</h2>
+        <p>CarbonLens turns a season of field records into an emissions inventory that buyers, auditors and programme partners can follow line by line.</p>
+        <ul class="auth-points">
+          <li><span class="ap-ic"><svg class="li li-book-open-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M12 21V7" /> <path pathLength="1" d="m16 12 2 2 4-4" /> <path pathLength="1" d="M22 6V4a1 1 0 0 0-1-1h-5a4 4 0 0 0-4 4 4 4 0 0 0-4-4H3a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6a1 1 0 0 0 1-1v-1.3" /></svg></span>
+            <div><b>IPCC 2006 Tier 1 &amp; Cool Farm Tool structure</b><span>Direct and indirect N&#8322;O, urea CO&#8322;, fuel, power and residue burning</span></div></li>
+          <li><span class="ap-ic"><svg class="li li-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle pathLength="1" cx="12" cy="10" r="3" /></svg></span>
+            <div><b>Factors adapted for Pakistan</b><span>Local fertiliser products, tube-well energy, tractor sizes, tehsil-level locations</span></div></li>
+          <li><span class="ap-ic"><svg class="li li-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect pathLength="1" width="18" height="11" x="3" y="11" rx="2" ry="2" /> <path pathLength="1" d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span>
+            <div><b>Your records stay private</b><span>Secure sign-in; each account sees only its own farms and saved results</span></div></li>
+        </ul>
+      </div>
+      <div class="auth-art-foot">
+        <span>SAWiE Ecosystems (Private) Limited</span>
+        <span>Faisalabad &middot; Aylesbury</span>
+      </div>
+    </aside>
+    <section class="auth-side">
+      <button class="btn btn-ghost btn-sm auth-back" onclick="goHome()">&larr; Back to site</button>
+      <div class="swap" id="swapCard">
+        <div class="swap-panel">
+          <div class="auth-pane" id="authPane">
+            <h2 class="swap-title" id="swapTitle">Welcome back</h2>
+            <p class="swap-sub" id="swapSub">Sign in to continue to your farm records.</p>
+            <div class="swap-seg" id="authTabs">
+              <span class="thumb"></span>
+              <button id="tabLogin" class="on" onclick="switchTab('login')">Sign in</button>
+              <button id="tabRegister" onclick="switchTab('register')">Create account</button>
+            </div>
+            <div id="authError" class="note err"></div>
+            <div id="loginSection">
+              <div class="fl" id="userWrap"><input id="loginUser" placeholder=" " autocomplete="username"/><label for="loginUser">Username or email</label></div>
+              <div class="fl has-eye" id="passWrap"><input id="loginPass" type="password" placeholder=" " autocomplete="current-password"/><label for="loginPass">Password</label>
+                <button type="button" class="fl-eye" onclick="togglePass('loginPass',this)" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+              <div class="swap-actions">
+                <label class="check"><input type="checkbox" id="keepSignedIn"/> Keep me signed in</label>
+                <button class="btn-link" style="font-size:13.5px" onclick="openForgot()">Forgot password?</button>
+              </div>
+              <button class="swap-submit" id="loginBtn" onclick="doLogin()">Sign in</button>
+            </div>
+            <div id="registerSection" style="display:none;">
+              <div class="fl" id="regFullNameWrap"><input id="regFullName" placeholder=" " autocomplete="name"/><label for="regFullName">Full name</label></div>
+              <div class="fl-row">
+                <div class="fl" id="regUserWrap"><input id="regUser" placeholder=" " autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="40" inputmode="text"/><label for="regUser">Username</label><small class="fl-err" id="regUserErr"></small></div>
+                <div class="fl" id="regEmailWrap"><input id="regEmail" type="email" placeholder=" " autocomplete="email" maxlength="254" inputmode="email"/><label for="regEmail">Email</label><small class="fl-err" id="regEmailErr"></small></div>
+              </div>
+              <div class="fl has-eye" id="regPassWrap"><input id="regPass" type="password" placeholder=" " autocomplete="new-password"/><label for="regPass">Password</label>
+                <button type="button" class="fl-eye" onclick="togglePass('regPass',this)" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+              <button class="swap-submit" id="registerBtn" onclick="doRegister()" style="margin-top:.3rem">Create account</button>
+            </div>
+          </div>
+        </div>
+        <div class="swap-foot" id="swapFoot">
+          <span id="swapFootText">New to CarbonLens?</span>
+          <button class="btn-link" id="swapFootBtn" onclick="switchTab(document.getElementById('registerSection').style.display==='none'?'register':'login')">Create an account</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ═════════════════════════ HOME ═════════════════════════ -->
+<div class="screen show" id="scHome">
+  <section class="hx">
+    <svg class="hx-blob-top" viewBox="0 0 900 620" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id="hbTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b4d2b"/><stop offset=".5" stop-color="#178a4c"/><stop offset="1" stop-color="#6fd093"/></linearGradient></defs>
+      <path d="M40 0 C 110 250, 330 410, 620 424 C 760 430, 860 404, 900 384 L 900 0 Z" fill="url(#hbTop)"/>
+    </svg>
+    <div class="wrap">
+      <div class="hx-grid">
+        <div class="hx-copy">
+          <h1 class="hx-title">Know the carbon in <em>every bale</em> of cotton.</h1>
+          <div class="hx-rule"></div>
+          <p class="hx-lead">Turn one season of farm records into a farm-gate carbon footprint, broken down by fertiliser, water, machinery, crop protection and residue.</p>
+          <div class="hx-cta">
+            <button class="btn btn-cta" onclick="startCalc()">Get started</button>
+            <button class="btn btn-ghost" onclick="goAbout()">About SAWiE <span class="arr">&rarr;</span></button>
+          </div>
+        </div>
+        <div class="hx-art" id="hxArt"><svg viewBox="0 0 680 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cotton plant feeding carbon data into a dashboard">
+  <defs>
+    <linearGradient id="hgBlob" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b4d2b"/><stop offset=".45" stop-color="#178a4c"/><stop offset=".8" stop-color="#3fbf74"/><stop offset="1" stop-color="#8fdcaa"/></linearGradient>
+    <linearGradient id="hgBlobEdge" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4cc27a"/><stop offset="1" stop-color="#0b4d2b"/></linearGradient>
+    <linearGradient id="hgLeaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b9f0cc" stop-opacity=".95"/><stop offset="1" stop-color="#3fbf74" stop-opacity=".75"/></linearGradient>
+    <linearGradient id="hgLeaf2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#7ad6a0"/><stop offset="1" stop-color="#d7f7e2"/></linearGradient>
+    <linearGradient id="hgPot" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b9792a"/><stop offset=".6" stop-color="#dfa748"/><stop offset="1" stop-color="#efc56a"/></linearGradient>
+    <linearGradient id="hgBar" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#178a4c"/><stop offset="1" stop-color="#4cc27a"/></linearGradient>
+    <filter id="hgShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#062a18" flood-opacity=".22"/></filter>
+    <radialGradient id="hgBollShade" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e3ece6"/></radialGradient>
+  </defs>
+  <g id="ilBlob">
+    <path d="M118 352 C 98 214, 214 116, 362 118 C 516 120, 628 214, 616 372 C 604 520, 484 616, 338 610 C 196 604, 136 488, 118 352 Z" fill="url(#hgBlobEdge)" transform="translate(0 16)"/>
+    <path d="M118 352 C 98 214, 214 116, 362 118 C 516 120, 628 214, 616 372 C 604 520, 484 616, 338 610 C 196 604, 136 488, 118 352 Z" fill="url(#hgBlob)"/>
+  </g>
+  <g id="ilLeaves">
+    <g class="ill-sway b"><path d="M232 318 C 170 300, 128 240, 140 176 C 196 196, 238 248, 232 318 Z" fill="url(#hgLeaf)"/><path d="M232 318 C 200 268, 170 224, 142 180" fill="none" stroke="#e9fbf0" stroke-width="2" opacity=".8"/></g>
+    <g class="ill-sway"><path d="M196 512 C 140 488, 116 418, 140 360 C 190 392, 214 452, 196 512 Z" fill="url(#hgLeaf2)" opacity=".9"/><path d="M196 512 C 180 460, 160 410, 142 366" fill="none" stroke="#ffffff" stroke-width="2" opacity=".7"/></g>
+  </g>
+  <g stroke="#c7eed5" stroke-width="3" fill="none" stroke-linecap="round" opacity=".9"><path d="M234 156 V 98 H 300"/><path d="M590 70 H 640 V 104"/></g>
+  <g fill="#c7eed5" opacity=".95"><rect x="560" y="86" width="56" height="16" rx="3"/><rect x="532" y="92" width="22" height="7" rx="3"/></g>
+
+  <g class="ill-float" filter="url(#hgShadow)"><g class="ill-in" id="ilCardA">
+    <rect x="238" y="124" width="400" height="166" rx="28" fill="#ffffff" fill-opacity=".94"/>
+    <circle cx="316" cy="206" r="50" fill="#f2fbf5" stroke="#dbe9e0" stroke-width="3"/>
+    <g class="ill-boll">
+      <path d="M296 226 l-10 12 l16 -4 z M336 226 l10 12 l-16 -4 z M316 232 l-6 14 l12 0 z" fill="#8a5a2b"/>
+      <circle cx="302" cy="206" r="15" fill="url(#hgBollShade)" stroke="#d3e2d8" stroke-width="1.5"/><circle cx="330" cy="206" r="15" fill="url(#hgBollShade)" stroke="#d3e2d8" stroke-width="1.5"/>
+      <circle cx="316" cy="192" r="15" fill="url(#hgBollShade)" stroke="#d3e2d8" stroke-width="1.5"/><circle cx="316" cy="218" r="15" fill="url(#hgBollShade)" stroke="#d3e2d8" stroke-width="1.5"/>
+    </g>
+    <rect x="282" y="268" width="68" height="6" rx="3" fill="#d6e2da"/>
+    <g id="ilBars">
+      <g fill="#dcefe3"><rect x="392" y="158" width="5" height="92" rx="2.5"/><rect x="410" y="158" width="5" height="92" rx="2.5"/><rect x="428" y="158" width="5" height="92" rx="2.5"/><rect x="446" y="158" width="5" height="92" rx="2.5"/><rect x="464" y="158" width="5" height="92" rx="2.5"/><rect x="482" y="158" width="5" height="92" rx="2.5"/><rect x="500" y="158" width="5" height="92" rx="2.5"/><rect x="518" y="158" width="5" height="92" rx="2.5"/><rect x="536" y="158" width="5" height="92" rx="2.5"/></g>
+      <g class="ilBar">
+        <rect x="392" y="196" width="5" height="54" rx="2.5" fill="#178a4c"/><rect x="410" y="174" width="5" height="76" rx="2.5" fill="#e0a33b"/><rect x="428" y="208" width="5" height="42" rx="2.5" fill="#178a4c"/>
+        <rect x="446" y="186" width="5" height="64" rx="2.5" fill="#e0a33b"/><rect x="464" y="214" width="5" height="36" rx="2.5" fill="#178a4c"/><rect x="482" y="192" width="5" height="58" rx="2.5" fill="#e0a33b"/>
+        <rect x="500" y="220" width="5" height="30" rx="2.5" fill="#178a4c"/><rect x="518" y="204" width="5" height="46" rx="2.5" fill="#e0a33b"/><rect x="536" y="226" width="5" height="24" rx="2.5" fill="#178a4c"/>
+      </g>
+    </g>
+    <g fill="#c4dccb"><rect x="566" y="168" width="52" height="7" rx="3.5"/><rect x="566" y="188" width="60" height="7" rx="3.5"/><rect x="566" y="208" width="34" height="7" rx="3.5"/><rect x="566" y="228" width="50" height="7" rx="3.5"/></g>
+  </g></g>
+
+  <g class="ill-float b" filter="url(#hgShadow)"><g class="ill-in" id="ilCardB">
+    <rect x="186" y="314" width="272" height="244" rx="28" fill="#ffffff" fill-opacity=".95"/>
+    <circle cx="252" cy="384" r="36" fill="none" stroke="#e5f6eb" stroke-width="15"/>
+    <circle id="ilDonutB" cx="252" cy="384" r="36" fill="none" stroke="#22a85b" stroke-width="15" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" transform="rotate(-90 252 384)"/>
+    <circle id="ilDonutB2" cx="252" cy="384" r="36" fill="none" stroke="#a6d66a" stroke-width="15" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" transform="rotate(150 252 384)"/>
+    <path d="M296 376 h 18 l 14 -16 h 30" fill="none" stroke="#9fd8b4" stroke-width="2"/><path d="M300 404 l 12 12 h 30" fill="none" stroke="#9fd8b4" stroke-width="2"/>
+    <rect x="346" y="354" width="40" height="6" rx="3" fill="#178a4c"/><rect x="346" y="412" width="30" height="6" rx="3" fill="#178a4c"/>
+    <g fill="#4cc27a"><rect x="404" y="350" width="40" height="9" rx="4.5"/><rect x="404" y="366" width="40" height="9" rx="4.5" opacity=".8"/><rect x="404" y="382" width="40" height="9" rx="4.5" opacity=".6"/></g>
+    <polyline class="ill-dash" points="212,520 252,508 286,512 322,476 360,470 404,436 440,430" fill="none" stroke="#7fd49d" stroke-width="2.4" stroke-linecap="round"/>
+    <g id="ilColsB"><rect x="342" y="482" width="20" height="52" rx="5" fill="url(#hgBar)"/><rect x="370" y="460" width="20" height="74" rx="5" fill="url(#hgBar)"/><rect x="398" y="436" width="20" height="98" rx="5" fill="url(#hgBar)"/></g>
+    <circle cx="440" cy="430" r="5" fill="#178a4c"/><circle class="ill-pulse" cx="440" cy="430" r="5" fill="#22a85b"/>
+  </g></g>
+
+  <g class="ill-float c" filter="url(#hgShadow)"><g class="ill-in" id="ilCardC">
+    <rect x="476" y="314" width="176" height="212" rx="28" fill="#ffffff" fill-opacity=".95"/>
+    <g fill="#9fd8b4"><rect x="500" y="338" width="24" height="5" rx="2.5"/><rect x="530" y="338" width="24" height="5" rx="2.5"/><rect x="560" y="338" width="24" height="5" rx="2.5"/><rect x="500" y="350" width="44" height="5" rx="2.5"/><rect x="552" y="350" width="10" height="5" rx="2.5"/><rect x="568" y="350" width="30" height="5" rx="2.5"/></g>
+    <circle cx="540" cy="426" r="42" fill="none" stroke="#e5f6eb" stroke-width="13"/>
+    <circle id="ilDonutC" cx="540" cy="426" r="42" fill="none" stroke="#178a4c" stroke-width="13" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264" transform="rotate(-90 540 426)"/>
+    <circle cx="616" cy="398" r="15" fill="none" stroke="#4cc27a" stroke-width="5"/><circle cx="616" cy="454" r="15" fill="none" stroke="#178a4c" stroke-width="5" stroke-dasharray="70 30"/>
+    <rect x="510" y="496" width="22" height="5" rx="2.5" fill="#c4dccb"/><rect x="580" y="496" width="22" height="5" rx="2.5" fill="#c4dccb"/>
+    <g id="ilPlus"><rect x="520" y="516" width="44" height="44" rx="12" fill="#ffffff" stroke="#e3ece6"/><path d="M542 528 v20 M532 538 h20" stroke="#9fb3a6" stroke-width="3" stroke-linecap="round"/></g>
+  </g></g>
+
+  <g id="ilPlant">
+    <g class="ill-sway">
+      <path d="M96 548 C 92 500, 82 456, 62 418" fill="none" stroke="#3d6b33" stroke-width="4" stroke-linecap="round"/>
+      <path d="M100 548 C 104 492, 118 446, 150 406" fill="none" stroke="#3d6b33" stroke-width="4" stroke-linecap="round"/>
+      <path d="M98 548 C 98 500, 100 452, 104 380" fill="none" stroke="#3d6b33" stroke-width="4" stroke-linecap="round"/>
+      <path d="M84 482 C 58 486, 40 470, 34 448 C 60 448, 78 460, 84 482 Z" fill="#4c9a3f"/>
+      <path d="M114 470 C 140 476, 160 462, 168 440 C 142 438, 120 450, 114 470 Z" fill="#5fb14d"/>
+      <path d="M100 520 C 78 528, 58 520, 50 502 C 72 498, 92 506, 100 520 Z" fill="#3e8a34"/>
+      <g class="ill-boll"><path d="M54 418 l-10 10 l12 -2z M70 418 l10 10 l-12 -2z" fill="#8a5a2b"/><circle cx="56" cy="406" r="11" fill="url(#hgBollShade)" stroke="#d3e2d8"/><circle cx="70" cy="406" r="11" fill="url(#hgBollShade)" stroke="#d3e2d8"/><circle cx="63" cy="395" r="11" fill="url(#hgBollShade)" stroke="#d3e2d8"/></g>
+      <g class="ill-boll"><path d="M96 382 l-10 10 l12 -2z M112 382 l10 10 l-12 -2z" fill="#8a5a2b"/><circle cx="98" cy="368" r="12" fill="url(#hgBollShade)" stroke="#d3e2d8"/><circle cx="113" cy="368" r="12" fill="url(#hgBollShade)" stroke="#d3e2d8"/><circle cx="105" cy="356" r="12" fill="url(#hgBollShade)" stroke="#d3e2d8"/></g>
+      <g class="ill-boll"><path d="M144 408 l-10 10 l12 -2z M160 408 l10 10 l-12 -2z" fill="#8a5a2b"/><circle cx="146" cy="396" r="11" fill="url(#hgBollShade)" stroke="#d3e2d8"/><circle cx="160" cy="396" r="11" fill="url(#hgBollShade)" stroke="#d3e2d8"/><circle cx="153" cy="385" r="11" fill="url(#hgBollShade)" stroke="#d3e2d8"/></g>
+    </g>
+    <path d="M56 548 H 142 L 132 616 H 66 Z" fill="url(#hgPot)"/><rect x="50" y="540" width="98" height="14" rx="4" fill="#c88a32"/>
+  </g>
+  <g id="ilCO2">
+    <g class="ill-co2" style="--dx:40px;animation-delay:0s"><g transform="translate(110 520)"><circle r="7" fill="#0f5132"/><circle cx="-12" r="5.5" fill="#fff"/><circle cx="12" r="5.5" fill="#fff"/></g></g>
+    <g class="ill-co2" style="--dx:80px;animation-delay:1.6s"><g transform="translate(70 500)"><circle r="6" fill="#0f5132"/><circle cx="-10" r="4.5" fill="#fff"/><circle cx="10" r="4.5" fill="#fff"/></g></g>
+    <g class="ill-co2" style="--dx:20px;animation-delay:3.1s"><g transform="translate(150 470)"><circle r="7" fill="#0f5132"/><circle cx="-12" r="5.5" fill="#fff"/><circle cx="12" r="5.5" fill="#fff"/></g></g>
+    <g class="ill-co2" style="--dx:60px;animation-delay:4.6s"><g transform="translate(40 450)"><circle r="5" fill="#0f5132"/><circle cx="-9" r="4" fill="#fff"/><circle cx="9" r="4" fill="#fff"/></g></g>
+    <g class="ill-co2" style="--dx:110px;animation-delay:5.8s"><g transform="translate(120 440)"><circle r="6" fill="#0f5132"/><circle cx="-10" r="4.5" fill="#fff"/><circle cx="10" r="4.5" fill="#fff"/></g></g>
+  </g>
+  <path class="ill-dash" d="M164 440 C 176 420, 180 410, 196 404" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>
+</svg>
+</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section id="weatherBar" class="wx is-loading" aria-label="Local weather" aria-live="polite">
+      <div class="wx-now">
+        <div class="wx-icon" id="wIcon" aria-hidden="true"></div>
+        <div class="wx-reading">
+          <div class="wx-temp" id="wTemp">&ndash;&deg;</div>
+          <div class="wx-desc" id="wDesc">Detecting your location&hellip;</div>
+        </div>
+      </div>
+      <div class="wx-meta">
+        <div class="wx-loc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <span class="wx-city" id="wCity">Your location</span>
+        </div>
+        <dl class="wx-stats">
+          <div><dt>Feels like</dt><dd id="wFeels">&ndash;</dd></div>
+          <div><dt>Humidity</dt><dd id="wHumidity">&ndash;</dd></div>
+          <div><dt>Wind</dt><dd id="wWind">&ndash;</dd></div>
+        </dl>
+      </div>
+      <div class="wx-fc" id="wxFc" aria-label="Forecast"></div>
+    </section>
+  </div>
+
+  <section class="sec" style="padding-top:1rem">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <div><div class="kicker">How it works</div>
+          <h2 class="sec-title">From field notebook to footprint<br/>in four steps.</h2></div>
+        <p class="sec-sub">The calculator follows a cotton season the way it happens on the farm, so the data your team already records is the data you enter.</p>
+      </div>
+      <div class="proc">
+        <div class="proc-card rv"><div class="n">01</div>
+          <div class="ic"><svg class="li li-tractor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="m10 11 11 .9a1 1 0 0 1 .8 1.1l-.665 4.158a1 1 0 0 1-.988.842H20" /> <path pathLength="1" d="M16 18h-5" /> <path pathLength="1" d="M18 5a1 1 0 0 0-1 1v5.573" /> <path pathLength="1" d="M3 4h8.129a1 1 0 0 1 .99.863L13 11.246" /> <path pathLength="1" d="M4 11V4" /> <path pathLength="1" d="M7 15h.01" /> <path pathLength="1" d="M8 10.1V4" /> <circle pathLength="1" cx="18" cy="18" r="2" /> <circle pathLength="1" cx="7" cy="15" r="5" /></svg></div>
+          <h4>Register the farm</h4><p>Location down to tehsil, cotton area, soil texture, drainage and climate.</p></div>
+        <div class="proc-card rv"><div class="n">02</div>
+          <div class="ic"><svg class="li li-sprout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M7 20h10" /> <path pathLength="1" d="M10 20c5.5-2.5.8-6.4 3-10" /> <path pathLength="1" d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" /> <path pathLength="1" d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" /></svg></div>
+          <h4>Log the season</h4><p>Seed, fertiliser, irrigation, sprays, field operations, residue and picking.</p></div>
+        <div class="proc-card rv"><div class="n">03</div>
+          <div class="ic"><svg class="li li-chart-column-increasing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M13 17V9" /> <path pathLength="1" d="M18 17V5" /> <path pathLength="1" d="M3 3v16a2 2 0 0 0 2 2h16" /> <path pathLength="1" d="M8 17v-3" /></svg></div>
+          <h4>See the hotspots</h4><p>Total CO&#8322;e, intensity per kg of seed cotton and lint, and where it comes from.</p></div>
+        <div class="proc-card rv"><div class="n">04</div>
+          <div class="ic"><svg class="li li-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /> <path pathLength="1" d="M14 2v4a2 2 0 0 0 2 2h4" /> <path pathLength="1" d="M10 9H8" /> <path pathLength="1" d="M16 13H8" /> <path pathLength="1" d="M16 17H8" /></svg></div>
+          <h4>Share the report</h4><p>A print-ready PDF with inputs, factors and results for buyers and auditors.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec tight">
+    <div class="wrap">
+      <div class="flow rv">
+        <div>
+          <div class="kicker">What we measure</div>
+          <h3>Six emission sources, one farm-gate boundary.</h3>
+          <p>Every figure is tied back to an input you entered. Pick a source to see what the calculator uses for it.</p>
+          <div class="flow-legend" id="flowLegend"><button data-k="fert" onclick="setFlow('fert',true)"><svg class="li li-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /> <path pathLength="1" d="M12 22V12" /> <path pathLength="1" d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" /> <path pathLength="1" d="m7.5 4.27 9 5.15" /></svg>Fertiliser</button><button data-k="irrig" onclick="setFlow('irrig',true)"><svg class="li li-droplet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" /></svg>Irrigation</button><button data-k="land" onclick="setFlow('land',true)"><svg class="li li-tractor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="m10 11 11 .9a1 1 0 0 1 .8 1.1l-.665 4.158a1 1 0 0 1-.988.842H20" /> <path pathLength="1" d="M16 18h-5" /> <path pathLength="1" d="M18 5a1 1 0 0 0-1 1v5.573" /> <path pathLength="1" d="M3 4h8.129a1 1 0 0 1 .99.863L13 11.246" /> <path pathLength="1" d="M4 11V4" /> <path pathLength="1" d="M7 15h.01" /> <path pathLength="1" d="M8 10.1V4" /> <circle pathLength="1" cx="18" cy="18" r="2" /> <circle pathLength="1" cx="7" cy="15" r="5" /></svg>Land preparation</button><button data-k="mach" onclick="setFlow('mach',true)"><svg class="li li-fuel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line pathLength="1" x1="3" x2="15" y1="22" y2="22" /> <line pathLength="1" x1="4" x2="14" y1="9" y2="9" /> <path pathLength="1" d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" /> <path pathLength="1" d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" /></svg>Machinery &amp; energy</button><button data-k="pest" onclick="setFlow('pest',true)"><svg class="li li-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /> <path pathLength="1" d="m9 12 2 2 4-4" /></svg>Crop protection</button><button data-k="resid" onclick="setFlow('resid',true)"><svg class="li li-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>Residue</button></div>
+          <div class="flow-detail" id="flowDetail"></div>
+        </div>
+        <div class="flow-art"><svg id="flowSvg" viewBox="0 -24 560 548" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six emission sources flowing into one farm-gate footprint">
+<defs><radialGradient id="fcGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#9fe3b6" stop-opacity=".35"/><stop offset="1" stop-color="#9fe3b6" stop-opacity="0"/></radialGradient></defs>
+<circle cx="280" cy="250" r="230" fill="url(#fcGlow)"/>
+<path id="fp0" class="fline" d="M280.0 98.0 L280.0 126.0" stroke="rgba(255,255,255,.28)" stroke-width="1.5" fill="none"/><path class="flink" d="M280.0 98.0 L280.0 126.0" stroke="#e0a33b" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".9"/><circle r="3.6" fill="#fff"><animateMotion dur="2.2s" begin="0.00s" repeatCount="indefinite"><mpath href="#fp0"/></animateMotion></circle>
+<path id="fp1" class="fline" d="M411.6 174.0 L387.4 188.0" stroke="rgba(255,255,255,.28)" stroke-width="1.5" fill="none"/><path class="flink" d="M411.6 174.0 L387.4 188.0" stroke="#5aa9e6" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".9"/><circle r="3.6" fill="#fff"><animateMotion dur="2.2s" begin="0.37s" repeatCount="indefinite"><mpath href="#fp1"/></animateMotion></circle>
+<path id="fp2" class="fline" d="M411.6 326.0 L387.4 312.0" stroke="rgba(255,255,255,.28)" stroke-width="1.5" fill="none"/><path class="flink" d="M411.6 326.0 L387.4 312.0" stroke="#7fd49d" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".9"/><circle r="3.6" fill="#fff"><animateMotion dur="2.2s" begin="0.74s" repeatCount="indefinite"><mpath href="#fp2"/></animateMotion></circle>
+<path id="fp3" class="fline" d="M280.0 402.0 L280.0 374.0" stroke="rgba(255,255,255,.28)" stroke-width="1.5" fill="none"/><path class="flink" d="M280.0 402.0 L280.0 374.0" stroke="#a48bea" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".9"/><circle r="3.6" fill="#fff"><animateMotion dur="2.2s" begin="1.11s" repeatCount="indefinite"><mpath href="#fp3"/></animateMotion></circle>
+<path id="fp4" class="fline" d="M148.4 326.0 L172.6 312.0" stroke="rgba(255,255,255,.28)" stroke-width="1.5" fill="none"/><path class="flink" d="M148.4 326.0 L172.6 312.0" stroke="#3cc0bd" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".9"/><circle r="3.6" fill="#fff"><animateMotion dur="2.2s" begin="1.48s" repeatCount="indefinite"><mpath href="#fp4"/></animateMotion></circle>
+<path id="fp5" class="fline" d="M148.4 174.0 L172.6 188.0" stroke="rgba(255,255,255,.28)" stroke-width="1.5" fill="none"/><path class="flink" d="M148.4 174.0 L172.6 188.0" stroke="#d18a5a" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".9"/><circle r="3.6" fill="#fff"><animateMotion dur="2.2s" begin="1.85s" repeatCount="indefinite"><mpath href="#fp5"/></animateMotion></circle>
+<g id="flowCore">
+<circle class="fcore-pulse" cx="280" cy="250" r="92" fill="none" stroke="#fff" stroke-width="2"/>
+<circle class="fcore-ring" cx="280" cy="250" r="126" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5" stroke-dasharray="2 9"/>
+<circle class="fseg" cx="280" cy="250" r="104" fill="none" stroke="#e0a33b" stroke-width="10" stroke-linecap="round" stroke-dasharray="98.9 653.5" stroke-dashoffset="54.5" transform="rotate(-90 280 250)" data-len="653.5" data-seg="98.9" data-off="54.5"/>
+<circle class="fseg" cx="280" cy="250" r="104" fill="none" stroke="#5aa9e6" stroke-width="10" stroke-linecap="round" stroke-dasharray="98.9 653.5" stroke-dashoffset="-54.5" transform="rotate(-90 280 250)" data-len="653.5" data-seg="98.9" data-off="-54.5"/>
+<circle class="fseg" cx="280" cy="250" r="104" fill="none" stroke="#7fd49d" stroke-width="10" stroke-linecap="round" stroke-dasharray="98.9 653.5" stroke-dashoffset="-163.4" transform="rotate(-90 280 250)" data-len="653.5" data-seg="98.9" data-off="-163.4"/>
+<circle class="fseg" cx="280" cy="250" r="104" fill="none" stroke="#a48bea" stroke-width="10" stroke-linecap="round" stroke-dasharray="98.9 653.5" stroke-dashoffset="-272.3" transform="rotate(-90 280 250)" data-len="653.5" data-seg="98.9" data-off="-272.3"/>
+<circle class="fseg" cx="280" cy="250" r="104" fill="none" stroke="#3cc0bd" stroke-width="10" stroke-linecap="round" stroke-dasharray="98.9 653.5" stroke-dashoffset="-381.2" transform="rotate(-90 280 250)" data-len="653.5" data-seg="98.9" data-off="-381.2"/>
+<circle class="fseg" cx="280" cy="250" r="104" fill="none" stroke="#d18a5a" stroke-width="10" stroke-linecap="round" stroke-dasharray="98.9 653.5" stroke-dashoffset="-490.1" transform="rotate(-90 280 250)" data-len="653.5" data-seg="98.9" data-off="-490.1"/>
+<circle cx="280" cy="250" r="88" fill="#fff"/>
+<image href="/static/img/sawie-logo.png" x="230" y="184" width="100" height="114" preserveAspectRatio="xMidYMid meet"/>
+<text x="280" y="316" text-anchor="middle" fill="#0f5132" font-family="Outfit, sans-serif" font-size="12" font-weight="700" letter-spacing="1.2">FARM GATE</text>
+</g>
+<g transform="translate(280.0 60.0)"><g class="fnode" data-k="fert" onclick="setFlow('fert',true)" onmouseenter="setFlow('fert',true)"><circle class="ring" r="36" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.45)" stroke-width="1.5"/><circle r="36" fill="none" stroke="#e0a33b" stroke-width="3" stroke-dasharray="60 400" stroke-linecap="round" transform="rotate(-90)"/><g class="glyph"><svg x="-15" y="-15" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /> <path pathLength="1" d="M12 22V12" /> <path pathLength="1" d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" /> <path pathLength="1" d="m7.5 4.27 9 5.15" /></svg></g></g><text x="0.0" y="-55.0" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="15" font-weight="600">Fertiliser</text></g>
+<g transform="translate(444.5 155.0)"><g class="fnode" data-k="irrig" onclick="setFlow('irrig',true)" onmouseenter="setFlow('irrig',true)"><circle class="ring" r="36" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.45)" stroke-width="1.5"/><circle r="36" fill="none" stroke="#5aa9e6" stroke-width="3" stroke-dasharray="60 400" stroke-linecap="round" transform="rotate(-30)"/><g class="glyph"><svg x="-15" y="-15" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" /></svg></g></g><text x="39.8" y="-18.0" text-anchor="start" fill="#fff" font-family="Outfit, sans-serif" font-size="15" font-weight="600">Irrigation</text></g>
+<g transform="translate(444.5 345.0)"><g class="fnode" data-k="land" onclick="setFlow('land',true)" onmouseenter="setFlow('land',true)"><circle class="ring" r="36" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.45)" stroke-width="1.5"/><circle r="36" fill="none" stroke="#7fd49d" stroke-width="3" stroke-dasharray="60 400" stroke-linecap="round" transform="rotate(30)"/><g class="glyph"><svg x="-15" y="-15" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="m10 11 11 .9a1 1 0 0 1 .8 1.1l-.665 4.158a1 1 0 0 1-.988.842H20" /> <path pathLength="1" d="M16 18h-5" /> <path pathLength="1" d="M18 5a1 1 0 0 0-1 1v5.573" /> <path pathLength="1" d="M3 4h8.129a1 1 0 0 1 .99.863L13 11.246" /> <path pathLength="1" d="M4 11V4" /> <path pathLength="1" d="M7 15h.01" /> <path pathLength="1" d="M8 10.1V4" /> <circle pathLength="1" cx="18" cy="18" r="2" /> <circle pathLength="1" cx="7" cy="15" r="5" /></svg></g></g><text x="39.8" y="28.0" text-anchor="start" fill="#fff" font-family="Outfit, sans-serif" font-size="15" font-weight="600">Land preparation</text></g>
+<g transform="translate(280.0 440.0)"><g class="fnode" data-k="mach" onclick="setFlow('mach',true)" onmouseenter="setFlow('mach',true)"><circle class="ring" r="36" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.45)" stroke-width="1.5"/><circle r="36" fill="none" stroke="#a48bea" stroke-width="3" stroke-dasharray="60 400" stroke-linecap="round" transform="rotate(90)"/><g class="glyph"><svg x="-15" y="-15" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line pathLength="1" x1="3" x2="15" y1="22" y2="22" /> <line pathLength="1" x1="4" x2="14" y1="9" y2="9" /> <path pathLength="1" d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18" /> <path pathLength="1" d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5" /></svg></g></g><text x="0.0" y="65.0" text-anchor="middle" fill="#fff" font-family="Outfit, sans-serif" font-size="15" font-weight="600">Machinery &amp; energy</text></g>
+<g transform="translate(115.5 345.0)"><g class="fnode" data-k="pest" onclick="setFlow('pest',true)" onmouseenter="setFlow('pest',true)"><circle class="ring" r="36" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.45)" stroke-width="1.5"/><circle r="36" fill="none" stroke="#3cc0bd" stroke-width="3" stroke-dasharray="60 400" stroke-linecap="round" transform="rotate(150)"/><g class="glyph"><svg x="-15" y="-15" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /> <path pathLength="1" d="m9 12 2 2 4-4" /></svg></g></g><text x="-39.8" y="28.0" text-anchor="end" fill="#fff" font-family="Outfit, sans-serif" font-size="15" font-weight="600">Crop protection</text></g>
+<g transform="translate(115.5 155.0)"><g class="fnode" data-k="resid" onclick="setFlow('resid',true)" onmouseenter="setFlow('resid',true)"><circle class="ring" r="36" fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.45)" stroke-width="1.5"/><circle r="36" fill="none" stroke="#d18a5a" stroke-width="3" stroke-dasharray="60 400" stroke-linecap="round" transform="rotate(210)"/><g class="glyph"><svg x="-15" y="-15" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path pathLength="1" d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg></g></g><text x="-39.8" y="-18.0" text-anchor="end" fill="#fff" font-family="Outfit, sans-serif" font-size="15" font-weight="600">Residue</text></g>
+</svg></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <div><div class="kicker">From sawie.net</div>
+          <h2 class="sec-title">Latest from SAWiE</h2></div>
+      </div>
+      <div class="news-grid" id="newsGrid">
+        <div class="news-card skel"></div>
+        <div class="news-card skel"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec tight" style="padding-bottom:4rem">
+    <div class="wrap">
+      <div class="cta-strip rv">
+        <div class="cta-copy"><h3>Have a cluster of farms to assess?</h3>
+          <p>Tell us about your farms, field team or programme and the SAWiE team will get back to you.</p></div>
+        <div class="cta-actions">
+          <button class="btn btn-primary btn-lg" onclick="openContact()">Talk to us <span class="arr" aria-hidden="true">&rarr;</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+    <footer class="app-footer">
+    <div class="wrap">
+      <div class="ft">
+        <div><span class="logo-tile"><img src="/static/img/sawie-logo.png" alt="SAWiE"/></span>
+          <p>CarbonLens is a cotton carbon footprint calculator by SAWiE, Sustainable Agriculture Water and Intelligent Ecosystems.</p></div>
+        <div><h5>Product</h5><button onclick="startCalc()">Calculation</button><button onclick="goHome()">How it works</button></div>
+        <div><h5>Company</h5><button onclick="goAbout()">About SAWiE</button><button onclick="openContact()">Contact</button><a href="https://sawie.net" target="_blank" rel="noopener">sawie.net</a></div>
+        <div><h5>Account</h5><button class="only-guest" onclick="openAuth('login')">Sign in</button><button class="only-guest" onclick="openAuth('register')">Create account</button><button class="only-auth" onclick="openProfile()">Profile</button><button class="only-auth" onclick="doSignout()">Sign out</button></div>
+      </div>
+      <div class="ft-base"><span>&copy; 2026 SAWiE Ecosystems (Private) Limited. All rights reserved.</span><span>NIC Faisalabad, University of Agriculture, Faisalabad</span></div>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ═════════════════════════ ABOUT ═════════════════════════ -->
+<div class="screen" id="scAbout">
+  <section class="ph">
+    <div class="wrap ph-grid">
+      <div class="ph-copy">
+      <h1>Data-driven advisory for the future of farming.</h1>
+      <p>CarbonLens is built by SAWiE, Sustainable Agriculture Water and Intelligent Ecosystems.</p>
+      </div>
+      <aside class="ph-card" aria-label="About SAWiE">
+        <div class="ph-card-top">
+          <span class="ph-card-logo"><img src="/static/img/sawie-logo.png" alt="SAWiE"/></span>
+          <div><b>SAWiE</b><span>Sustainable Agriculture Water and Intelligent Ecosystems</span></div>
+        </div>
+        <ul class="ph-card-list">
+          <li>Unbiased, data-driven farm advisory</li>
+          <li>Satellite, drone and IoT field monitoring</li>
+          <li>Fertiliser and irrigation schedules</li>
+          <li>Drought and flood early warnings</li>
+        </ul>
+        <div class="ph-card-foot"><span>Faisalabad, Pakistan</span><span>Aylesbury, UK</span></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:1rem">
+    <div class="wrap">
+      <div class="stats rv">
+        <div class="stat"><div class="ic"><svg class="li li-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle pathLength="1" cx="12" cy="10" r="3" /></svg></div><div><b>Pakistan &amp; UK</b><span>Faisalabad and Aylesbury offices</span></div></div>
+        <div class="stat"><div class="ic"><svg class="li li-satellite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M13 7 9 3 5 7l4 4" /> <path pathLength="1" d="m17 11 4 4-4 4-4-4" /> <path pathLength="1" d="m8 12 4 4 6-6-4-4Z" /> <path pathLength="1" d="m16 8 3-3" /> <path pathLength="1" d="M9 21a6 6 0 0 0-6-6" /></svg></div><div><b>Geospatial + ML + IoT</b><span>a distributed monitoring network</span></div></div>
+        <div class="stat"><div class="ic"><svg class="li li-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" /> <path pathLength="1" d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" /></svg></div><div><b>3 sectors</b><span>climate-smart, regenerative, water</span></div></div>
+        <div class="stat"><div class="ic"><svg class="li li-layout-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect pathLength="1" width="7" height="7" x="3" y="3" rx="1" /> <rect pathLength="1" width="7" height="7" x="14" y="3" rx="1" /> <rect pathLength="1" width="7" height="7" x="14" y="14" rx="1" /> <rect pathLength="1" width="7" height="7" x="3" y="14" rx="1" /></svg></div><div><b>6 advisory services</b><span>from soil to harvest</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec tight">
+    <div class="wrap ab-grid">
+      <div class="ab-copy rv">
+        <p>SAWiE runs a distributed network for agricultural monitoring in Pakistan, combining geospatial data with machine learning and IoT.</p>
+        <p>Its farm advisory gives farmers real-time, reliable and unbiased information, helping smallholders and large farms deal with climate challenges and build resilient food systems.</p>
+        <p>CarbonLens brings that approach to carbon. A field officer or farmer enters one cotton season of inputs and gets a farm-gate footprint with the breakdown behind it. The method follows the Cool Farm Tool structure and IPCC guidance, with factors adapted for Pakistan: local fertiliser products, tube-well energy sources, common tractor sizes and the district and tehsil lists used in the field.</p>
+      </div>
+      <div class="ab-facts rv">
+        <div class="ab-fact"><span>Company</span><b>SAWiE Ecosystems (Private) Limited</b></div>
+        <div class="ab-fact"><span>Registration</span><b>SECP, Pakistan</b></div>
+        <div class="ab-fact"><span>Pakistan office</span><b>NIC Faisalabad, University of Agriculture</b></div>
+        <div class="ab-fact"><span>UK office</span><b>Westcott Space Park, Aylesbury</b></div>
+        <div class="ab-fact"><span>Sectors</span><b>Climate-smart &amp; regenerative agriculture, water</b></div>
+        <div class="ab-fact"><span>Website</span><b><a href="https://sawie.net" target="_blank" rel="noopener">sawie.net</a></b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec tight">
+    <div class="wrap">
+      <div class="sec-head rv"><div><div class="kicker">What SAWiE does</div><h2 class="sec-title">Advisory across the farming cycle</h2></div></div>
+      <div class="svc">
+        <div class="svc-card rv"><div class="ic"><svg class="li li-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" /> <path pathLength="1" d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" /> <path pathLength="1" d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" /></svg></div>
+          <h4>Soil analysis &amp; mapping</h4><p>Satellite and open datasets to assess soil moisture and structure for farm management.</p></div>
+        <div class="svc-card rv"><div class="ic"><svg class="li li-calendar-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M8 2v4" /> <path pathLength="1" d="M16 2v4" /> <rect pathLength="1" width="18" height="18" x="3" y="4" rx="2" /> <path pathLength="1" d="M3 10h18" /> <path pathLength="1" d="m9 16 2 2 4-4" /></svg></div>
+          <h4>Crop planning &amp; sowing</h4><p>Best sowing dates from weather history and forecasts, with crop and variety recommendations.</p></div>
+        <div class="svc-card rv"><div class="ic"><svg class="li li-droplets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z" /> <path pathLength="1" d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97" /></svg></div>
+          <h4>Fertiliser &amp; irrigation</h4><p>Fertiliser recommendations and irrigation schedules that cut water loss and cost.</p></div>
+        <div class="svc-card rv"><div class="ic"><svg class="li li-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline pathLength="1" points="22 7 13.5 15.5 8.5 10.5 2 17" /> <polyline pathLength="1" points="16 7 22 7 22 13" /></svg></div>
+          <h4>Harvest &amp; yield forecasting</h4><p>Harvest timing that avoids bad weather, plus early yield estimates for supply planning.</p></div>
+        <div class="svc-card rv"><div class="ic"><svg class="li li-shield-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /> <path pathLength="1" d="M12 8v4" /> <path pathLength="1" d="M12 16h.01" /></svg></div>
+          <h4>Pest &amp; disease alerts</h4><p>Early warnings so farmers can act before an outbreak spreads.</p></div>
+        <div class="svc-card rv"><div class="ic"><svg class="li li-wheat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M2 22 16 8" /> <path pathLength="1" d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z" /> <path pathLength="1" d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z" /> <path pathLength="1" d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z" /> <path pathLength="1" d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z" /> <path pathLength="1" d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z" /> <path pathLength="1" d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z" /> <path pathLength="1" d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z" /></svg></div>
+          <h4>Farm productivity</h4><p>All of the above combined, so decisions across the season rest on data.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec tight" style="padding-bottom:4rem">
+    <div class="wrap">
+      <div class="sec-head rv"><div><div class="kicker">Sectors</div><h2 class="sec-title">Where SAWiE works</h2></div></div>
+      <div class="sectors">
+        <article class="sector rv" data-sector="climate">
+          <div class="sector-media">
+            <div class="sector-art" aria-hidden="true"><svg viewBox="0 0 320 180"><rect width="320" height="180" fill="url(#sk1)"/><defs><linearGradient id="sk1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6f6ec"/><stop offset="1" stop-color="#c7eed5"/></linearGradient></defs><g class="sa-sun"><circle cx="262" cy="42" r="18" fill="#f4c34d"/><g stroke="#f4c34d" stroke-width="3" stroke-linecap="round"><path d="M262 12v-6M262 78v-6M232 42h-6M298 42h-6M241 21l-4-4M287 67l-4-4M283 21l4-4M237 67l4-4"/></g></g><g class="sa-cloud"><path d="M40 52h50a14 14 0 0 0-4-27 20 20 0 0 0-38 6 11 11 0 0 0-8 21z" fill="#fff"/></g><path d="M0 130 Q80 105 160 125 T320 118 V180 H0Z" fill="#4cc27a"/><path d="M0 150 Q90 130 170 148 T320 140 V180 H0Z" fill="#178a4c"/><g class="sa-sway" fill="#0f5132"><path d="M60 150c0-20 6-34 16-44-2 16-8 30-16 44z"/><path d="M110 152c0-22-6-36-16-46 2 18 8 32 16 46z"/><path d="M200 146c0-20 6-34 16-44-2 16-8 30-16 44z"/><path d="M250 150c0-22-6-36-16-46 2 18 8 32 16 46z"/></g><g class="sa-leaf"><path d="M160 112c0-26 18-44 44-44 0 26-18 44-44 44z" fill="#22a85b"/><path d="M160 112l30-30" stroke="#e5f6eb" stroke-width="2"/></g></svg></div>
+            <img class="sector-photo" src="/static/img/sectors/climate.jpg" alt="Climate-smart agriculture" loading="lazy" onload="this.classList.add('ok')" onerror="this.remove()"/>
+          </div>
+          <div class="sector-body"><h4>Climate-smart agriculture</h4><p>Practices and data that raise yields while cutting emissions and building resilience to heat, drought and floods.</p></div>
+        </article>
+        <article class="sector rv" data-sector="regen">
+          <div class="sector-media">
+            <div class="sector-art" aria-hidden="true"><svg viewBox="0 0 320 180"><rect width="320" height="180" fill="url(#sk2)"/><defs><linearGradient id="sk2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2fbf5"/><stop offset="1" stop-color="#e5f6eb"/></linearGradient></defs><rect y="110" width="320" height="70" fill="#8a5a2b"/><rect y="110" width="320" height="10" fill="#4c9a3f"/><g fill="#6b4220" opacity=".5"><circle cx="40" cy="140" r="3"/><circle cx="120" cy="160" r="2.5"/><circle cx="200" cy="138" r="3"/><circle cx="280" cy="158" r="2.5"/></g><path class="sa-root" d="M160 112v30M160 128l-14 14M160 134l12 12M160 142l-6 16" stroke="#f2d9b8" stroke-width="2.5" fill="none" stroke-linecap="round"/><g class="sa-grow"><path d="M160 112V70" stroke="#3d6b33" stroke-width="4" stroke-linecap="round"/><path d="M160 84c-20 0-34-12-34-30 20 0 34 12 34 30z" fill="#4c9a3f"/><path d="M160 74c20 0 34-12 34-30-20 0-34 12-34 30z" fill="#5fb14d"/></g><g class="sa-worm"><path d="M60 150q8-8 16 0t16 0t16 0" stroke="#d9927a" stroke-width="5" fill="none" stroke-linecap="round"/></g><g class="sa-bubble" fill="#ffffff"><circle cx="230" cy="100" r="5"/><circle cx="250" cy="80" r="4"/><circle cx="240" cy="60" r="3"/></g></svg></div>
+            <img class="sector-photo" src="/static/img/sectors/regen.jpg" alt="Regenerative agriculture" loading="lazy" onload="this.classList.add('ok')" onerror="this.remove()"/>
+          </div>
+          <div class="sector-body"><h4>Regenerative agriculture</h4><p>Restoring soil health, organic matter and biodiversity through certified regenerative cotton and rice clusters.</p></div>
+        </article>
+        <article class="sector rv" data-sector="drinking">
+          <div class="sector-media">
+            <div class="sector-art" aria-hidden="true"><svg viewBox="0 0 320 180"><rect width="320" height="180" fill="url(#sk3)"/><defs><linearGradient id="sk3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaf3fb"/><stop offset="1" stop-color="#cfe2f4"/></linearGradient></defs><rect x="140" y="40" width="40" height="16" rx="4" fill="#64748b"/><rect x="172" y="44" width="40" height="8" rx="3" fill="#64748b"/><rect x="204" y="44" width="10" height="22" rx="3" fill="#475569"/><g class="sa-drops" fill="#2f80c9"><path d="M209 74c-4 6-6 9-6 12a6 6 0 0 0 12 0c0-3-2-6-6-12z"/><path d="M209 74c-4 6-6 9-6 12a6 6 0 0 0 12 0c0-3-2-6-6-12z"/><path d="M209 74c-4 6-6 9-6 12a6 6 0 0 0 12 0c0-3-2-6-6-12z"/></g><path d="M180 112h58l-6 52h-46z" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/><path class="sa-fill" d="M184 140h50l-3 22h-44z" fill="#5aa9e6"/><g class="sa-ripple" fill="none" stroke="#2f80c9" stroke-width="2"><ellipse cx="80" cy="150" rx="30" ry="8"/><ellipse cx="80" cy="150" rx="30" ry="8"/></g></svg></div>
+            <img class="sector-photo" src="/static/img/sectors/drinking.jpg" alt="Drinking water" loading="lazy" onload="this.classList.add('ok')" onerror="this.remove()"/>
+          </div>
+          <div class="sector-body"><h4>Drinking water</h4><p>Monitoring and safeguarding clean, reliable drinking water for farming communities.</p></div>
+        </article>
+        <article class="sector rv" data-sector="irrigation">
+          <div class="sector-media">
+            <div class="sector-art" aria-hidden="true"><svg viewBox="0 0 320 180"><rect width="320" height="180" fill="url(#sk4)"/><defs><linearGradient id="sk4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6f6ec"/><stop offset="1" stop-color="#d7f0e0"/></linearGradient></defs><path d="M0 120h320v60H0z" fill="#4cc27a"/><g stroke="#178a4c" stroke-width="3"><path d="M0 132h320M0 148h320M0 164h320"/></g><path class="sa-flow" d="M0 140 C80 128 160 152 320 136" stroke="#5aa9e6" stroke-width="6" fill="none" stroke-linecap="round"/><rect x="24" y="64" width="34" height="58" rx="4" fill="#64748b"/><path d="M58 76h40v8H58z" fill="#475569"/><g class="sa-spray" stroke="#5aa9e6" stroke-width="3" stroke-linecap="round"><path d="M100 80l14-10M100 80l16 0M100 80l14 10"/></g><g class="sa-pulse"><path d="M160 60h20l8-16 10 32 8-16h30" stroke="#178a4c" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g><circle class="sa-dot" cx="276" cy="60" r="5" fill="#22a85b"/></svg></div>
+            <img class="sector-photo" src="/static/img/sectors/irrigation.jpg" alt="Irrigation water management" loading="lazy" onload="this.classList.add('ok')" onerror="this.remove()"/>
+          </div>
+          <div class="sector-body"><h4>Irrigation water management</h4><p>Sensor and satellite-based irrigation scheduling that saves water, energy and cost.</p></div>
+        </article>
+      </div>
+      <div class="cta-strip cta-strip--spaced rv">
+        <div class="cta-copy"><h3>Ready to measure a season?</h3><p>Create an account and enter your first farm season.</p></div>
+        <div class="cta-actions"><button class="btn btn-primary btn-lg" onclick="startCalc()">Open the calculator <span class="arr" aria-hidden="true">&rarr;</span></button></div>
+      </div>
+    </div>
+  </section>
+    <footer class="app-footer">
+    <div class="wrap">
+      <div class="ft">
+        <div><span class="logo-tile"><img src="/static/img/sawie-logo.png" alt="SAWiE"/></span>
+          <p>CarbonLens is a cotton carbon footprint calculator by SAWiE, Sustainable Agriculture Water and Intelligent Ecosystems.</p></div>
+        <div><h5>Product</h5><button onclick="startCalc()">Calculation</button><button onclick="goHome()">How it works</button></div>
+        <div><h5>Company</h5><button onclick="goAbout()">About SAWiE</button><button onclick="openContact()">Contact</button><a href="https://sawie.net" target="_blank" rel="noopener">sawie.net</a></div>
+        <div><h5>Account</h5><button class="only-guest" onclick="openAuth('login')">Sign in</button><button class="only-guest" onclick="openAuth('register')">Create account</button><button class="only-auth" onclick="openProfile()">Profile</button><button class="only-auth" onclick="doSignout()">Sign out</button></div>
+      </div>
+      <div class="ft-base"><span>&copy; 2026 SAWiE Ecosystems (Private) Limited. All rights reserved.</span><span>NIC Faisalabad, University of Agriculture, Faisalabad</span></div>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ═════════════════════════ CONTACT ═════════════════════════ -->
+<div class="screen" id="scContact">
+  <section class="ph">
+    <div class="wrap ph-grid">
+      <div class="ph-copy">
+      <h1>Talk to the CarbonLens team.</h1>
+      <p>Questions about a result, an emission factor, or access for your cluster. Send the farm ID and season if it's about a specific calculation.</p>
+      </div>
+      <aside class="ph-card" aria-label="About SAWiE">
+        <div class="ph-card-top">
+          <span class="ph-card-logo"><img src="/static/img/sawie-logo.png" alt="SAWiE"/></span>
+          <div><b>SAWiE</b><span>Sustainable Agriculture Water and Intelligent Ecosystems</span></div>
+        </div>
+        <ul class="ph-card-list">
+          <li>Unbiased, data-driven farm advisory</li>
+          <li>Satellite, drone and IoT field monitoring</li>
+          <li>Fertiliser and irrigation schedules</li>
+          <li>Drought and flood early warnings</li>
+        </ul>
+        <div class="ph-card-foot"><span>Faisalabad, Pakistan</span><span>Aylesbury, UK</span></div>
+      </aside>
+    </div>
+  </section>
+  <section class="sec" style="padding-top:1rem;padding-bottom:4rem">
+    <div class="wrap ct-grid">
+      <div class="ct-info">
+        <div class="ct-card rv"><div class="ic"><svg class="li li-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect pathLength="1" width="20" height="16" x="2" y="4" rx="2" /> <path pathLength="1" d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg></div>
+          <div><h4>Email</h4><p><a href="mailto:sawie.info@gmail.com">sawie.info@gmail.com</a></p></div></div>
+        <div class="ct-card rv"><div class="ic"><svg class="li li-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg></div>
+          <div><h4>Phone</h4><p>Pakistan <a href="tel:+923045072115">+92 304 5072115</a><br/>UK <a href="tel:+447552687994">+44 7552 687994</a></p></div></div>
+        <div class="ct-card rv"><div class="ic"><svg class="li li-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /> <circle pathLength="1" cx="12" cy="10" r="3" /></svg></div>
+          <div><h4>Offices</h4><p>NIC Faisalabad, University of Agriculture, Faisalabad, Pakistan<br/>Westcott Space Park, Westcott, Aylesbury HP18 0XB, UK</p></div></div>
+        <div class="ct-card rv"><div class="ic"><svg class="li li-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle pathLength="1" cx="12" cy="12" r="10" /> <polyline pathLength="1" points="12 6 12 12 16 14" /></svg></div>
+          <div><h4>Response time</h4><p>We reply within two working days. For a question about a result, include the farm ID and season.</p></div></div>
+      </div>
+      <div class="ct-form rv">
+        <h3>Send a message</h3>
+        <p>Your message goes straight to the SAWiE team.</p>
+        <div id="contactFormErr" class="note err"></div>
+        <div id="contactFormOk" class="note ok"></div>
+        <div id="contactFormWrap">
+          <div class="ct-topics" id="ctTopics">
+            <button class="ct-topic on" data-v="info" onclick="pickTopic(this)">General information</button>
+            <button class="ct-topic" data-v="tech" onclick="pickTopic(this)">Technical support</button>
+          </div>
+          <select id="ctCategory" style="display:none"><option value="info">info</option><option value="tech">tech</option></select>
+          <div class="fl-row">
+            <div class="fl" id="ctNameWrap"><input id="ctName" placeholder=" " autocomplete="name"/><label for="ctName">Your name</label></div>
+            <div class="fl" id="ctEmailWrap"><input id="ctEmail" type="email" placeholder=" " autocomplete="email"/><label for="ctEmail">Email</label></div>
+          </div>
+          <div class="fl" id="ctFarmWrap"><input id="ctFarmId" placeholder=" "/><label for="ctFarmId">Farm ID <span class="fl-opt">(optional)</span></label></div>
+          <div class="fl"><textarea id="ctMessage" rows="5" placeholder=" "></textarea><label for="ctMessage">Message</label></div>
+          <button class="swap-submit" id="ctSendBtn" onclick="sendContactForm()" style="width:auto;padding:.95rem 2.2rem">Send message</button>
+        </div>
+      </div>
+    </div>
+  </section>
+    <footer class="app-footer">
+    <div class="wrap">
+      <div class="ft">
+        <div><span class="logo-tile"><img src="/static/img/sawie-logo.png" alt="SAWiE"/></span>
+          <p>CarbonLens is a cotton carbon footprint calculator by SAWiE, Sustainable Agriculture Water and Intelligent Ecosystems.</p></div>
+        <div><h5>Product</h5><button onclick="startCalc()">Calculation</button><button onclick="goHome()">How it works</button></div>
+        <div><h5>Company</h5><button onclick="goAbout()">About SAWiE</button><button onclick="openContact()">Contact</button><a href="https://sawie.net" target="_blank" rel="noopener">sawie.net</a></div>
+        <div><h5>Account</h5><button class="only-guest" onclick="openAuth('login')">Sign in</button><button class="only-guest" onclick="openAuth('register')">Create account</button><button class="only-auth" onclick="openProfile()">Profile</button><button class="only-auth" onclick="doSignout()">Sign out</button></div>
+      </div>
+      <div class="ft-base"><span>&copy; 2026 SAWiE Ecosystems (Private) Limited. All rights reserved.</span><span>NIC Faisalabad, University of Agriculture, Faisalabad</span></div>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ═════════════════════════ CALCULATOR ═════════════════════════ -->
+<div class="screen" id="scApp">
+  <div class="app-body">
+    <aside class="wiz-nav">
+      <div class="wiz-card">
+        <div class="t">Season progress</div>
+        <div class="v"><span id="wizPct">0</span>% <small>complete</small></div>
+        <div class="wiz-meter"><i id="wizMeter"></i></div>
+      </div>
+      <h3>Steps</h3>
+      <div id="wnav"></div>
+      <div class="wiz-help">
+        <div class="box"><b>Stuck on a field?</b>Leave optional fields blank, ask the assistant in the corner, or <button class="btn-link" onclick="openContact()">contact support</button>.</div>
+      </div>
+    </aside>
+    <main class="wiz-main">
+      <div class="wiz-top">
+        <div class="wiz-title"><b id="wizCrumb">New season calculation</b><span class="wiz-count" id="wizCount">Farm setup</span></div>
+        <span class="sp"></span>
+        <button class="btn btn-outline btn-sm" onclick="goHome()">Exit</button>
+        <div class="wiz-progress-bar-wrap"><div class="wiz-progress-bar" id="wizProgressBar" style="width:0%"></div></div>
+      </div>
+      <nav class="wiz-mstep" id="wizMstep" aria-label="Calculator steps"></nav>
+      <div id="steps"></div>
+    </main>
+  </div>
+</div>
+
+<!-- ═════════════════════════ RESULTS ═════════════════════════ -->
+<div class="screen" id="scResults">
+  <div class="res-wrap"><div class="res-inner" id="resInner"></div></div>
+    <footer class="app-footer slim"><div class="wrap"><div class="ft-base"><span>&copy; 2026 SAWiE Ecosystems (Private) Limited</span><span>CarbonLens</span></div></div></footer>
+</div>
+
+<!-- ═════════════════════════ PROFILE ═════════════════════════ -->
+<div class="overlay" id="profileOverlay" onclick="if(event.target===this)closeProfile()">
+  <div class="modal" id="profileModal">
+    <div class="modal-head"><div><h3>Your account</h3><p>Details, password and saved calculations</p></div>
+      <button class="modal-x" onclick="closeProfile()" aria-label="Close">&times;</button></div>
+    <div class="modal-body">
+      <div class="pf-body">
+        <div>
+          <div class="prf-tabs">
+            <button class="prf-tab active" id="prfTabBtn-info" onclick="prfSwitch('info')">Account</button>
+            <button class="prf-tab" id="prfTabBtn-pass" onclick="prfSwitch('pass')">Password</button>
+            <button class="prf-tab" id="prfTabBtn-hist" onclick="prfSwitch('hist')">History</button>
+          </div>
+          <div class="prf-pane" id="prfPane-info">
+            <div class="prf-row"><span class="prf-lbl">Username</span><span class="prf-val" id="prfUsername">&mdash;</span></div>
+            <div class="prf-row"><span class="prf-lbl">Full name</span><span class="prf-val" id="prfFullName">&mdash;</span></div>
+            <div class="prf-row"><span class="prf-lbl">Email</span><span class="prf-val" id="prfEmail">&mdash;</span></div>
+            <div class="prf-row"><span class="prf-lbl">Member since</span><span class="prf-val" id="prfSince">&mdash;</span></div>
+          </div>
+          <div class="prf-pane" id="prfPane-pass" style="display:none">
+            <div id="prfPassErr" class="note err"></div>
+            <div id="prfPassOk" class="note ok"></div>
+            <div class="fl has-eye" id="prfCurPassWrap"><input id="prfCurPass" type="password" placeholder=" " autocomplete="current-password"/><label for="prfCurPass">Current password</label>
+              <button type="button" class="fl-eye" onclick="togglePass('prfCurPass',this)" aria-label="Show"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+            <div class="fl has-eye" id="prfNewPassWrap"><input id="prfNewPass" type="password" placeholder=" " autocomplete="new-password"/><label for="prfNewPass">New password</label>
+              <button type="button" class="fl-eye" onclick="togglePass('prfNewPass',this)" aria-label="Show"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+            <div class="fl has-eye" id="prfConfPassWrap"><input id="prfConfPass" type="password" placeholder=" " autocomplete="new-password"/><label for="prfConfPass">Confirm new password</label>
+              <button type="button" class="fl-eye" onclick="togglePass('prfConfPass',this)" aria-label="Show"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+            <button class="btn btn-primary btn-sm" id="prfPassBtn" onclick="prfChangePassword()">Update password</button>
+          </div>
+          <div class="prf-pane" id="prfPane-hist" style="display:none">
+            <div class="prf-hist-head">
+              <span>Saved calculations <small id="prfHistCount"></small></span>
+              <button id="clearHistBtn" class="btn btn-outline btn-sm btn-danger-outline" onclick="initClearHistory()">Clear history</button>
+            </div>
+            <div id="clearHistErr" class="note err"></div>
+            <div id="clearHistOk" class="note ok"></div>
+            <div id="clearHistOtpWrap" class="otp-confirm" style="display:none">
+              <p>Enter the code we emailed you to confirm deletion.</p>
+              <div class="otp-row">
+                <input id="clearHistOtp" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" aria-label="6-digit code">
+                <button class="btn btn-sm btn-danger" onclick="submitClearHistory()">Delete all</button>
+                <button class="btn btn-outline btn-sm" onclick="cancelClearHistory()">Cancel</button>
+              </div>
+            </div>
+            <div id="prfHistLoading" style="display:none"></div>
+            <div id="prfHistEmpty" style="display:none"></div>
+            <div id="prfHistList"></div>
+          </div>
+        </div>
+        <div class="pf-div"></div>
+        <div class="pf-preview">
+          <div class="pf-avatar"><span id="pfInit">CL</span><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c0-8 6-14 16-15C19 13 13 20 4 20z"/></svg></span></div>
+          <div class="pf-name" id="pfName">&mdash;</div>
+          <div class="pf-mail" id="pfMail"></div>
+          <div class="pf-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Member since <span id="pfSince">&mdash;</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pf-foot">
+      <span>Your session is protected and renews automatically.</span>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-white btn-sm" onclick="closeProfile()">Close</button>
+        <button class="btn btn-primary btn-sm" onclick="closeProfile();startCalc()">New calculation</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════ DOWNLOAD ═════════════════════════ -->
+<div class="overlay" id="dlOverlay" onclick="if(event.target===this)closeDownload()">
+  <div class="modal">
+    <div class="modal-head"><div><h3>Download report</h3><p>Carbon, water and labour for this season</p></div>
+      <button class="modal-x" onclick="closeDownload()" aria-label="Close">&times;</button></div>
+    <div class="modal-body">
+      <div class="dl-opt">
+        <div class="dl-card pdf" onclick="downloadReport('pdf')"><div class="ico">PDF</div><h4>PDF report</h4><p>Opens the print dialog in your browser</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════ ASSISTANT ═════════════════════════ -->
+<button id="clChatToggle" onclick="toggleChat()" aria-label="Open CarbonLens Assistant">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01"/></svg>
+  <span class="lbl">Ask CarbonLens</span>
+</button>
+<div id="clChatPanel" role="dialog" aria-label="CarbonLens Assistant">
+  <div id="clChatHead">
+    <div class="ch-av"><img src="/static/img/sawie-logo.png" alt=""/><i></i></div>
+    <div class="ch-t"><b>CarbonLens Assistant</b><span>Online</span></div>
+    <button class="ch-btn" onclick="clearChat()" title="New conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+    <button class="ch-btn" onclick="toggleChat()" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <div id="clChatBody"></div>
+  <div class="ch-sugg" id="clChatSugg">
+    <button onclick="askSuggestion(this)">Why is residue burning so high?</button>
+    <button onclick="askSuggestion(this)">How do I lower my fertiliser emissions?</button>
+    <button onclick="askSuggestion(this)">What does kg CO&#8322;e per kg lint mean?</button>
+  </div>
+  <div id="clChatInputRow">
+    <input id="clChatInput" placeholder="Type your question" autocomplete="off" onkeydown="if(event.key==='Enter')sendChat();"/>
+    <button onclick="sendChat()" id="clChatSend" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+  <div class="ch-foot">Answers can be wrong. Check important figures in your report.</div>
+</div>
+
+<script src="/static/js/data.js?v=6"></script>
+<script src="/static/js/app.js?v=11"></script>
+
+
+</body>
+</html>
